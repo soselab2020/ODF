@@ -48,12 +48,13 @@ def extract_field_answers_and_images(path: str, fields: list[str]):
     if current_field and buffer:
         results[current_field] = "\n".join(buffer).strip()
 
+    # 圖片處理
     with tempfile.TemporaryDirectory() as extract_dir:
         try:
             with zipfile.ZipFile(path, 'r') as zip_ref:
                 zip_ref.extractall(extract_dir)
         except zipfile.BadZipFile:
-            print(f"⚠️ 無法解壓縮 ODT：{path}")
+            print(f"無法解壓縮 ODT：{path}")
             return results, images
 
         pic_dir = os.path.join(extract_dir, "Pictures")

@@ -1,9 +1,11 @@
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import FileResponse, JSONResponse
-import os, json
+import os, json, tempfile
 
 from .models import DynamicAssignmentInput
 from .odf_utils import create_dynamic_assignment_odt, extract_field_answers_and_images
+
+from typing import List
 
 app = FastAPI()
 
@@ -12,6 +14,31 @@ def generate_assignment(input_data: DynamicAssignmentInput):
     output_path = os.path.join("D:\\temp", "學生作業.odt")
     create_dynamic_assignment_odt(output_path, input_data)
     return FileResponse(output_path, filename="學生作業.odt", media_type="application/vnd.oasis.opendocument.text")
+
+@app.post("/extract-folder")
+def extract_folder(files: List[UploadFile] = File(...), fields_json: str = Form("[]")):
+    try:
+        fields = json.loads(fields_json)
+        if not isinstance(fields, list):
+            return JSONResponse(content={"error": "欄位格式錯誤，應為 list[str]"}, status_code=400)
+    except json.JSONDecodeError:
+        return JSONResponse(content={"error": "欄位 JSON 解析失敗"}, status_code=400)
+
+    all_results = {}
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        for file in files:
+            tmp_path = os.path.join(tmp_dir, file.filename)
+            with open(tmp_path, "wb") as f:
+                f.write(file.file.read())
+
+            answers, images = extract_field_answers_and_images(tmp_path, fields)
+            all_results[file.filename] = {
+                "answers": answers,
+                "images": images
+            }
+
+    return JSONResponse(content=all_results)
 
 @app.post("/extract")
 def extract_uploaded_file(file: UploadFile = File(...), fields_json: str = Form("[]")):
@@ -31,5 +58,5 @@ def extract_uploaded_file(file: UploadFile = File(...), fields_json: str = Form(
 
     return JSONResponse(content={
         "answers": answers,
-        "images": images
+        "images": images  # base64 編碼格式，key 為含欄位名的圖片檔名
     })
