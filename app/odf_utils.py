@@ -19,6 +19,7 @@ def create_dynamic_assignment_odt(path: str, data):
         doc.text.addElement(P(text=""))
 
     doc.save(path)
+    print(f"✅ 成功產生檔案：{path}，存在嗎？{os.path.exists(path)}")
 
 def extract_field_answers_and_images(path: str, fields: list[str]):
     doc = load(path)

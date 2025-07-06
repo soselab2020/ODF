@@ -1,19 +1,31 @@
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import FileResponse, JSONResponse
-import os, json, tempfile
+import os, json, tempfile, zipfile
 
 from .models import DynamicAssignmentInput
 from .odf_utils import create_dynamic_assignment_odt, extract_field_answers_and_images
 
 from typing import List
 
+from .config_utils import load_config
+
+CONFIG = load_config()
+BASE_OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), CONFIG.get("OUTPUT_DIR")))
+os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)  # 確保目錄存在
+
 app = FastAPI()
 
 @app.post("/generate")
 def generate_assignment(input_data: DynamicAssignmentInput):
-    output_path = os.path.join("D:\\temp", "學生作業.odt")
+    output_path = os.path.join(BASE_OUTPUT_DIR, "Exercise.odt")
     create_dynamic_assignment_odt(output_path, input_data)
-    return FileResponse(output_path, filename="學生作業.odt", media_type="application/vnd.oasis.opendocument.text")
+    download_url = "/download-generated"
+    return JSONResponse(content={"download_url": download_url})
+
+@app.get("/download-generated")
+def download_generated():
+    output_path = os.path.join(BASE_OUTPUT_DIR, "Exercise.odt")
+    return FileResponse(output_path, filename="Exercise.odt", media_type="application/vnd.oasis.opendocument.text")
 
 @app.post("/extract-folder")
 def extract_folder(files: List[UploadFile] = File(...), fields_json: str = Form("[]")):
@@ -26,17 +38,16 @@ def extract_folder(files: List[UploadFile] = File(...), fields_json: str = Form(
 
     all_results = {}
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        for file in files:
-            tmp_path = os.path.join(tmp_dir, file.filename)
-            with open(tmp_path, "wb") as f:
-                f.write(file.file.read())
+    for file in files:
+        tmp_path = os.path.join(BASE_OUTPUT_DIR, file.filename)
+        with open(tmp_path, "wb") as f:
+            f.write(file.file.read())
 
-            answers, images = extract_field_answers_and_images(tmp_path, fields)
-            all_results[file.filename] = {
-                "answers": answers,
-                "images": images
-            }
+        answers, images = extract_field_answers_and_images(tmp_path, fields)
+        all_results[file.filename] = {
+            "answers": answers,
+            "images": images
+        }
 
     return JSONResponse(content=all_results)
 
@@ -50,7 +61,7 @@ def extract_uploaded_file(file: UploadFile = File(...), fields_json: str = Form(
     except json.JSONDecodeError:
         return JSONResponse(content={"error": "欄位 JSON 解析失敗"}, status_code=400)
 
-    tmp_path = f"D:\\temp\\D-{file.filename}"
+    tmp_path = os.path.join(BASE_OUTPUT_DIR, f"D-{file.filename}")
     with open(tmp_path, "wb") as f:
         f.write(file.file.read())
 
@@ -60,3 +71,18 @@ def extract_uploaded_file(file: UploadFile = File(...), fields_json: str = Form(
         "answers": answers,
         "images": images  # base64 編碼格式，key 為含欄位名的圖片檔名
     })
+
+# ----------- 新功能：下載指定目錄壓縮檔 ----------- #
+@app.get("/download-folder")
+def download_folder():
+    zip_name = os.path.join(BASE_OUTPUT_DIR, "output_archive.zip")
+
+    with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for foldername, subfolders, filenames in os.walk(BASE_OUTPUT_DIR):
+            for filename in filenames:
+                if filename != os.path.basename(zip_name):
+                    filepath = os.path.join(foldername, filename)
+                    arcname = os.path.relpath(filepath, BASE_OUTPUT_DIR)
+                    zipf.write(filepath, arcname)
+
+    return FileResponse(zip_name, filename="output_archive.zip", media_type="application/zip")
