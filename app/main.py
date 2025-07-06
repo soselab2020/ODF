@@ -1,10 +1,9 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 from pydantic import BaseModel
 from fastapi.responses import FileResponse, JSONResponse
 from odf.opendocument import OpenDocumentText, load
 from odf.text import P, H
 import tempfile, os, json, zipfile, base64
-from fastapi import Form
 
 app = FastAPI()
 
@@ -39,7 +38,6 @@ def generate_assignment(input_data: DynamicAssignmentInput):
     create_dynamic_assignment_odt(output_path, input_data)
     return FileResponse(output_path, filename="學生作業.odt", media_type="application/vnd.oasis.opendocument.text")
 
-
 # ----------- 功能：擷取學生作答內容與圖片 ----------- #
 def extract_field_answers_and_images(path: str, fields: list[str]):
     doc = load(path)
@@ -53,32 +51,30 @@ def extract_field_answers_and_images(path: str, fields: list[str]):
     buffer = []
 
     for p in paragraphs:
-        text = str(p.firstChild.data) if p.firstChild else ""
-
+        text = "".join([n.data for n in p.childNodes if hasattr(n, 'data')])
         if text.startswith("📝"):
-            # 儲存前一欄位的內容
             if current_field and buffer:
                 results[current_field] = "\n".join(buffer).strip()
                 buffer = []
-
             for field in fields:
                 if field in text:
                     current_field = field
                     break
-
         elif current_field:
-            # 排除預設佔位符或空白段落
             if text.strip() and text.strip() != "====================":
                 buffer.append(text.strip())
 
-    # 儲存最後一欄位的內容
     if current_field and buffer:
         results[current_field] = "\n".join(buffer).strip()
 
-    # 圖片處理保持不變...
+    # 圖片處理
     with tempfile.TemporaryDirectory() as extract_dir:
-        with zipfile.ZipFile(path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
+        try:
+            with zipfile.ZipFile(path, 'r') as zip_ref:
+                zip_ref.extractall(extract_dir)
+        except zipfile.BadZipFile:
+            print(f"⚠️ 無法解壓縮 ODT：{path}")
+            return results, images
 
         pic_dir = os.path.join(extract_dir, "Pictures")
         if os.path.isdir(pic_dir):
@@ -104,7 +100,7 @@ def extract_uploaded_file(file: UploadFile = File(...), fields_json: str = Form(
     except json.JSONDecodeError:
         return JSONResponse(content={"error": "欄位 JSON 解析失敗"}, status_code=400)
 
-    tmp_path = f"D:\\temp\D-{file.filename}"
+    tmp_path = f"D:\\temp\\D-{file.filename}"
     with open(tmp_path, "wb") as f:
         f.write(file.file.read())
 
