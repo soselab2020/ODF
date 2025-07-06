@@ -1,0 +1,226 @@
+<!-- static/index.html -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章詳情頁面</title>
+    <!-- 引入jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 自訂CSS -->
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        header {
+            background-color: #4a69bd;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .article-list {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-right: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .article-detail {
+            flex: 2;
+            min-width: 300px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .article-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .article-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .article-item.active {
+            background-color: #e3f2fd;
+            font-weight: bold;
+        }
+        
+        .article-title {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .article-meta {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .article-content {
+            line-height: 1.8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .article-list {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>新知識文章平台</h1>
+    </header>
+    
+    <div class="container">
+        
+        <!--
+        <div class="article-list">
+            <h2>文章列表</h2>
+            <div id="articles-container">
+                <div class="loading">載入文章中...</div>
+            </div>
+        </div>
+        -->
+
+        <div class="article-detail" id="article-detail">
+            <h2 class="article-title" id="article-title"></h2>
+            <div class="article-meta">
+                <span id="article-author"></span>
+                <span id="article-date"></span>
+            </div>
+            <div class="article-content" id="article-content"></div>
+        </div>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            // 獲取當前URL路徑
+            const path = window.location.pathname;
+            const pathSegments = path.split('/');
+            
+            // 如果是文章詳情頁面 "/newknowledge/{article_id}"
+            if (pathSegments.length >= 3 && pathSegments[1] === 'newknowledge') {
+                const articleId = pathSegments[2];
+                // 載入特定文章
+                loadArticleDetail(articleId);
+            }
+            
+            // 載入文章列表
+            // loadArticles();
+            
+            // 處理文章項目點擊事件
+            $(document).on('click', '.article-item', function() {
+                const articleId = $(this).data('id');
+                // 更改URL，不重新加載頁面
+                window.history.pushState({}, '', `/newknowledge/${articleId}`);
+                // 載入文章詳情
+                loadArticleDetail(articleId);
+            });
+        });
+        
+        /*
+        // 載入所有文章列表
+        function loadArticles() {
+            $.ajax({
+                url: '/api/articles',
+                method: 'GET',
+                success: function(response) {
+                    const articlesContainer = $('#articles-container');
+                    articlesContainer.empty();
+                    
+                    if (response.articles && response.articles.length > 0) {
+                        response.articles.forEach(function(article) {
+                            const articleItem = $('<div>')
+                                .addClass('article-item')
+                                .attr('data-id', article.id)
+                                .text(article.title);
+                            
+                            articlesContainer.append(articleItem);
+                        });
+                    } else {
+                        articlesContainer.html('<div>暫無文章</div>');
+                    }
+                },
+                error: function(error) {
+                    console.error('載入文章列表失敗:', error);
+                    $('#articles-container').html('<div>載入文章失敗，請重試</div>');
+                }
+            });
+        } 
+        */
+        
+        // 載入文章詳情
+        function loadArticleDetail(articleId) {
+            $.ajax({
+                url: `/api/articles/${articleId}`,
+                method: 'GET',
+                success: function(article) {
+                    // 填充文章詳情
+                    $('#article-title').text(article.title);
+                    $('#article-author').text(`作者：${article.author}`);
+                    $('#article-date').text(`發布日期：${article.date}`);
+                    $('#article-content').text(article.content);
+                    
+                    // 顯示文章詳情區塊
+                    $('#article-detail').show();
+                    
+                    // 設置活動項目的樣式
+                    $('.article-item').removeClass('active');
+                    $(`.article-item[data-id="${articleId}"]`).addClass('active');
+                },
+                error: function(error) {
+                    console.error('載入文章詳情失敗:', error);
+                    $('#article-detail').hide();
+                    alert('找不到指定文章或載入失敗');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
