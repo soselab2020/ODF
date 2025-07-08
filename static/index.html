@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>ODF Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="odf_tool.js" defer></script>
+</head>
+
+<body>
+    <h1>ODF學生作業工具</h1>
+
+    <h2>1️⃣ 設定欄位標題</h2>
+    <div id="fieldContainer">
+        <input type="text" class="fieldInput" placeholder="欄位名稱" />
+    </div>
+    <button onclick="addField()">➕ 新增欄位</button>
+
+    <h2>2️⃣ 產生作業文件格式</h2>
+    <form id="generateForm">
+        <label>課程名稱：<input type="text" id="courseName" required /></label><br />
+        <label>單元名稱：<input type="text" id="unitName" required /></label><br />
+        <button type="submit">📄 產生表單</button>
+    </form>
+
+    <h2>3️⃣ 擷取學生作業內容（單一檔案）</h2>
+    <form id="extractForm" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".odt" required />
+        <button type="submit">📤 擷取內容</button>
+    </form>
+
+    <h2>4️⃣ 分析整個目錄 (請選擇有多個檔案的目錄) </h2>
+    <form id="extractFolderForm" enctype="multipart/form-data">
+        <input type="file" name="files" webkitdirectory directory multiple required />
+        <button type="submit">📂 分析目錄</button>
+    </form>
+    <div id="result"></div>
+
+
+</body>
+
+</html>

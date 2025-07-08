@@ -1,21 +1,37 @@
 from odf.opendocument import OpenDocumentText, load
-from odf.text import P, H
+from odf.text import P, H, Span
+from odf.style import Style, TextProperties
 import tempfile, os, zipfile, base64
 
 def create_dynamic_assignment_odt(path: str, data):
     doc = OpenDocumentText()
 
+    #預留粗體樣式
+    bold_style = Style(name="BoldText", family="text")
+    bold_style.addElement(TextProperties(fontweight="bold"))
+    doc.styles.addElement(bold_style)
+
     doc.text.addElement(H(outlinelevel=1, text="學生作業表單"))
     doc.text.addElement(P(text=f"課程名稱：{data.course_name}"))
-    doc.text.addElement(P(text=f"單元名稱：{data.unit_name}"))
+    doc.text.addElement(P(text=f"單元名稱：{data.unit_name}"))    
     doc.text.addElement(P(text=""))
 
-    doc.text.addElement(P(text="【請依下列欄位作答】"))
+    doc.text.addElement(H(outlinelevel=3, text="請依下列欄位作答："))
+    
+    doc.text.addElement(P(text="📝 學號"))
+    doc.text.addElement(P(text="===================="))    
+    doc.text.addElement(P(text="請刪除此行文字，並改為你的學號！"))
+    doc.text.addElement(P(text=""))
+
+    doc.text.addElement(P(text="📝 姓名"))
+    doc.text.addElement(P(text="===================="))    
+    doc.text.addElement(P(text="請刪除此行文字，並填入你的姓名！"))
     doc.text.addElement(P(text=""))
 
     for field in data.fields:
         doc.text.addElement(P(text=f"📝 {field}"))
         doc.text.addElement(P(text="===================="))
+        doc.text.addElement(P(text="請刪除此行文字，並將你的答案寫在這裡！"))
         doc.text.addElement(P(text=""))
 
     doc.save(path)
@@ -62,6 +78,7 @@ def extract_field_answers_and_images(path: str, fields: list[str]):
         if os.path.isdir(pic_dir):
             for fname in os.listdir(pic_dir):
                 if fname.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                    print("抓到圖片：", fname.lower())
                     field_name = current_field or "未指定欄位"
                     image_counter[field_name] = image_counter.get(field_name, 0) + 1
                     new_name = f"{field_name}_圖片{image_counter[field_name]}{os.path.splitext(fname)[1]}"
@@ -69,5 +86,6 @@ def extract_field_answers_and_images(path: str, fields: list[str]):
                     with open(fpath, "rb") as img_file:
                         encoded = base64.b64encode(img_file.read()).decode('utf-8')
                         images[new_name] = encoded
+                        print("圖片編碼：", encoded)
 
     return results, images
