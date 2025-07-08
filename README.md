@@ -31,20 +31,6 @@
 - 彙整所有學生作業成表格
 - 自動生成 Markdown 檔案供下載
 
-## 專案架構
-
-ODF-Tool/
-├── app/
-│ ├── main.py # FastAPI 主伺服器邏輯
-│ ├── models.py # 資料模型定義（Pydantic）
-│ ├── odf_utils.py # ODF 文件生成與解析工具
-│ ├── config_utils.py # 設定值與路徑處理
-├── static/
-│ └── odf_tool.js # 前端互動邏輯（圖片顯示、下載等）
-├── index.html # 使用者介面頁面
-├── output/ # 產生的 ODF 與擷取結果存放處
-└── README.md # 本文件
-
 ## 執行方式
 
 ### 1. 安裝
