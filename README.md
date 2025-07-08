@@ -1,4 +1,4 @@
-# 📝 ODF 學習單工具（ODF Tool）
+# ODF 學習單工具（ODF Tool）
 
 本專案是一套以 **Python FastAPI** 為後端、**HTML + JavaScript** 為前端的工具系統，支援教師快速：
 
@@ -31,7 +31,7 @@
 - 彙整所有學生作業成表格
 - 自動生成 Markdown 檔案供下載
 
-## 📦 專案架構
+## 專案架構
 
 ODF-Tool/
 ├── app/
@@ -45,7 +45,7 @@ ODF-Tool/
 ├── output/ # 產生的 ODF 與擷取結果存放處
 └── README.md # 本文件
 
-## ⚙️ 執行方式
+## 執行方式
 
 ### 1. 安裝
 pip install -r requirements.txt
