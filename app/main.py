@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from typing import List
 
-import os, json, tempfile, zipfile
+import os, json, zipfile
 
 from .models import DynamicAssignmentInput
 from .odf_utils import create_dynamic_assignment_odt, extract_field_answers_and_images
@@ -15,6 +15,17 @@ os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)  # 確保目錄存在
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# 共用邏輯：處理擷取欄位與圖片
+def handle_extraction(filepaths: List[str], filenames: List[str], fields: List[str]):
+    results = {}
+    for filepath, filename in zip(filepaths, filenames):
+        answers, images = extract_field_answers_and_images(filepath, fields)
+        results[filename] = {
+            "answers": answers,
+            "images": images
+        }
+    return results
 
 @app.get("/")
 def read_index():
@@ -49,12 +60,9 @@ def extract_uploaded_file(file: UploadFile = File(...), fields_json: str = Form(
     with open(tmp_path, "wb") as f:
         f.write(file.file.read())
 
-    answers, images = extract_field_answers_and_images(tmp_path, fields)
+    result = handle_extraction([tmp_path], [file.filename], fields)
+    return JSONResponse(content=result[file.filename])
 
-    return JSONResponse(content={
-        "answers": answers,
-        "images": images  # base64 編碼格式，key 為含欄位名的圖片檔名
-    })
 
 @app.post("/extract-folder")
 def extract_folder(files: List[UploadFile] = File(...), fields_json: str = Form("[]")):
@@ -65,21 +73,16 @@ def extract_folder(files: List[UploadFile] = File(...), fields_json: str = Form(
     except json.JSONDecodeError:
         return JSONResponse(content={"error": "欄位 JSON 解析失敗"}, status_code=400)
 
-    all_results = {}
-
+    filepaths, filenames = [], []
     for file in files:
         tmp_path = os.path.join(BASE_OUTPUT_DIR, file.filename)
-        os.makedirs(os.path.dirname(tmp_path), exist_ok=True)  # ✅ 確保目錄存在
-        
+        os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
         with open(tmp_path, "wb") as f:
             f.write(file.file.read())
+        filepaths.append(tmp_path)
+        filenames.append(file.filename)
 
-        answers, images = extract_field_answers_and_images(tmp_path, fields)
-        all_results[file.filename] = {
-            "answers": answers,
-            "images": images
-        }
-
+    all_results = handle_extraction(filepaths, filenames, fields)
     return JSONResponse(content=all_results)
 
 # ----------- 下載指定目錄壓縮檔 ----------- #

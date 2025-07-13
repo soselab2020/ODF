@@ -37,7 +37,7 @@
 pip install -r requirements.txt
 
 ### 2. 啟動伺服器
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 
 ### 3. 開啟瀏覽器至 http://127.0.0.1:8000
 

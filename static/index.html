@@ -21,19 +21,19 @@
     <form id="generateForm">
         <label>課程名稱：<input type="text" id="courseName" required /></label><br />
         <label>單元名稱：<input type="text" id="unitName" required /></label><br />
-        <button type="submit">📄 產生表單</button>
+        <button type="submit">📄 產生作業表單 (依照上方欄位設定)</button>
     </form>
 
     <h2>3️⃣ 擷取學生作業內容（單一檔案）</h2>
     <form id="extractForm" enctype="multipart/form-data">
         <input type="file" name="file" accept=".odt" required />
-        <button type="submit">📤 擷取內容</button>
+        <button type="submit">📤 擷取內容 (依照上方欄位設定)</button>
     </form>
 
     <h2>4️⃣ 分析整個目錄 (請選擇有多個檔案的目錄) </h2>
     <form id="extractFolderForm" enctype="multipart/form-data">
         <input type="file" name="files" webkitdirectory directory multiple required />
-        <button type="submit">📂 分析目錄</button>
+        <button type="submit">📂 分析目錄  (依照上方欄位設定)</button>
     </form>
     <div id="result"></div>
 
